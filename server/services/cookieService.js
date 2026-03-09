@@ -1,8 +1,9 @@
 const scenarioService = require("./scenarioService");
+const crypto = require("crypto");
 
 class CookieService {
   constructor() {
-    // Store active sessions: scenarioId -> Set of sessionIds
+    // Store active sessions: scenarioId -> Map of sessionId -> { createdAt, lastAccessedAt }
     this.activeSessions = new Map();
   }
 
@@ -26,46 +27,64 @@ class CookieService {
   async isCookieValidationEnabled(scenarioId) {
     try {
       const scenario = await scenarioService.getScenarioById(scenarioId);
-      console.log(`[Cookie-${scenarioId}] Checking validation status. cookieValidationEnabled field:`, scenario?.cookieValidationEnabled);
+      console.log(
+        `[Cookie-${scenarioId}] Checking validation status. cookieValidationEnabled field:`,
+        scenario?.cookieValidationEnabled,
+      );
       // If cookieValidationEnabled is undefined, default to true for backward compatibility
       const isEnabled = scenario?.cookieValidationEnabled !== false;
-      console.log(`[Cookie-${scenarioId}] Validation enabled result: ${isEnabled}`);
+      console.log(
+        `[Cookie-${scenarioId}] Validation enabled result: ${isEnabled}`,
+      );
       return isEnabled;
     } catch (error) {
-      console.error(`Error checking cookie validation status for ${scenarioId}:`, error);
+      console.error(
+        `Error checking cookie validation status for ${scenarioId}:`,
+        error,
+      );
       return true; // Default to enabled for safety
     }
   }
 
-  // Get the expected cookie value for a scenario
-  async getExpectedCookieValue(scenarioId) {
-    try {
-      const scenario = await scenarioService.getScenarioById(scenarioId);
-      return scenario?.cookieValue || null;
-    } catch (error) {
-      console.error(
-        `Error getting cookie value for ${scenarioId}:`,
-        error,
-      );
-      return null;
-    }
+  // Generate a new unique session cookie for a user
+  generateSessionCookie(scenarioId) {
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    this.registerSession(scenarioId, sessionId);
+    console.log(
+      `[Cookie-${scenarioId}] Generated new session cookie: ${sessionId}`,
+    );
+    return sessionId;
   }
 
   // Register a new session
   registerSession(scenarioId, sessionId) {
     if (!this.activeSessions.has(scenarioId)) {
-      this.activeSessions.set(scenarioId, new Set());
+      this.activeSessions.set(scenarioId, new Map());
     }
-    this.activeSessions.get(scenarioId).add(sessionId);
+
+    const sessions = this.activeSessions.get(scenarioId);
+    sessions.set(sessionId, {
+      createdAt: new Date(),
+      lastAccessedAt: new Date(),
+    });
+
     console.log(
-      `[Cookie] Registered session ${sessionId} for scenario ${scenarioId}`,
+      `[Cookie-${scenarioId}] Registered session ${sessionId} (Total sessions: ${sessions.size})`,
     );
   }
 
   // Validate session
   isValidSession(scenarioId, sessionId) {
     const sessions = this.activeSessions.get(scenarioId);
-    return sessions && sessions.has(sessionId);
+    if (!sessions || !sessions.has(sessionId)) {
+      return false;
+    }
+
+    // Update last accessed time
+    const sessionData = sessions.get(sessionId);
+    sessionData.lastAccessedAt = new Date();
+
+    return true;
   }
 
   // Parse cookie header to extract sessionId
@@ -92,6 +111,43 @@ class CookieService {
   getSessionCount(scenarioId) {
     const sessions = this.activeSessions.get(scenarioId);
     return sessions ? sessions.size : 0;
+  }
+
+  // Get all active sessions for a scenario (for debugging/monitoring)
+  getActiveSessions(scenarioId) {
+    const sessions = this.activeSessions.get(scenarioId);
+    if (!sessions) return [];
+
+    return Array.from(sessions.entries()).map(([sessionId, data]) => ({
+      sessionId,
+      createdAt: data.createdAt,
+      lastAccessedAt: data.lastAccessedAt,
+    }));
+  }
+
+  // Clean up expired sessions (optional - can be called periodically)
+  cleanupExpiredSessions(scenarioId, maxAgeMs = 3600000) {
+    const sessions = this.activeSessions.get(scenarioId);
+    if (!sessions) return 0;
+
+    const now = new Date();
+    let removedCount = 0;
+
+    for (const [sessionId, data] of sessions.entries()) {
+      const age = now - data.lastAccessedAt;
+      if (age > maxAgeMs) {
+        sessions.delete(sessionId);
+        removedCount++;
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(
+        `[Cookie-${scenarioId}] Cleaned up ${removedCount} expired sessions`,
+      );
+    }
+
+    return removedCount;
   }
 }
 

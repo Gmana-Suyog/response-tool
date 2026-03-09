@@ -218,7 +218,7 @@ class ScenarioService {
         if (scenario) {
           // Determine base directory based on type
           const baseDir = scenario.type === "DASH" ? DASH_DIR : HLS_DIR;
-          
+
           // Also get segment count from file system
           const segmentMapPath = path.join(
             baseDir,
@@ -254,14 +254,14 @@ class ScenarioService {
   // Get scenario from file system (fallback)
   async getScenarioByIdFromFS(scenarioId) {
     console.log("getScenarioByIdFromFS called with:", scenarioId);
-    
+
     // Try HLS directory first
     try {
       let scenarioPath = path.join(HLS_DIR, scenarioId);
       let detailsPath = path.join(scenarioPath, "details.json");
 
       console.log("Checking HLS path:", detailsPath);
-      
+
       // If not found in HLS, try VOD HLS
       if (!(await fs.pathExists(detailsPath))) {
         console.log("Not found in HLS, checking VOD HLS...");
@@ -269,7 +269,7 @@ class ScenarioService {
         detailsPath = path.join(scenarioPath, "details.json");
         console.log("Checking VOD HLS path:", detailsPath);
       }
-      
+
       // If not found in VOD HLS, try DASH
       if (!(await fs.pathExists(detailsPath))) {
         console.log("Not found in VOD HLS, checking DASH...");
@@ -357,15 +357,15 @@ class ScenarioService {
       addCookie,
     } = scenarioData;
     const scenarioId = name.replace(/[^a-zA-Z0-9-_]/g, "_");
-    
+
     // Generate cookie value if addCookie is YES and type is HLS Live
-    let cookieValue = null;
-    if (addCookie === "YES" && type === "HLS" && playbackType === "Live") {
-      const crypto = require("crypto");
-      cookieValue = crypto.randomBytes(16).toString("hex");
-      console.log(`Generated cookie value for scenario ${scenarioId}: ${cookieValue}`);
-    }
-    
+    // let cookieValue = null;
+    // if (addCookie === "YES" && type === "HLS" && playbackType === "Live") {
+    //   const crypto = require("crypto");
+    //   cookieValue = crypto.randomBytes(16).toString("hex");
+    //   console.log(`Generated cookie value for scenario ${scenarioId}: ${cookieValue}`);
+    // }
+
     // Determine base directory based on type and playbackType
     let baseDir;
     if (type === "HLS" && playbackType === "VOD") {
@@ -414,7 +414,7 @@ class ScenarioService {
       selectedAudioVariant: selectedAudioVariant || null,
       requestHeaders: headersObject,
       addCookie: addCookie || "NO",
-      cookieValue: cookieValue,
+      cookieValue: null,
       createdAt: new Date().toISOString(),
       profiles: [],
       downloadStatus: "idle",
@@ -426,7 +426,12 @@ class ScenarioService {
       await fs.ensureDir(path.join(scenarioPath, "manifests"));
       await fs.ensureDir(path.join(scenarioPath, "media/video"));
       await fs.ensureDir(path.join(scenarioPath, "media/audio"));
-    } else if (type === "VMAP" || type === "VAST" || type === "MP4" || type === "GIF") {
+    } else if (
+      type === "VMAP" ||
+      type === "VAST" ||
+      type === "MP4" ||
+      type === "GIF"
+    ) {
       // VMAP/VAST/MP4/GIF folder structure - just the main folder
       await fs.ensureDir(scenarioPath);
     } else if (type === "HLS" && playbackType === "VOD") {
@@ -446,9 +451,14 @@ class ScenarioService {
     await fs.writeJson(path.join(scenarioPath, "details.json"), details, {
       spaces: 2,
     });
-    
+
     // Only create these files for HLS/DASH
-    if (type !== "VMAP" && type !== "VAST" && type !== "MP4" && type !== "GIF") {
+    if (
+      type !== "VMAP" &&
+      type !== "VAST" &&
+      type !== "MP4" &&
+      type !== "GIF"
+    ) {
       await fs.writeJson(
         path.join(scenarioPath, "segmentMap.json"),
         {},
@@ -579,13 +589,17 @@ class ScenarioService {
     // If not found in DB, check file system
     if (scenarioType === "HLS" && playbackType === "Live") {
       const hlsDetailsPath = path.join(HLS_DIR, scenarioId, "details.json");
-      const vodHlsDetailsPath = path.join(VOD_HLS_DIR, scenarioId, "details.json");
+      const vodHlsDetailsPath = path.join(
+        VOD_HLS_DIR,
+        scenarioId,
+        "details.json",
+      );
       const dashDetailsPath = path.join(DASH_DIR, scenarioId, "details.json");
       const vmapDetailsPath = path.join(VMAP_DIR, scenarioId, "details.json");
       const vastDetailsPath = path.join(VAST_DIR, scenarioId, "details.json");
       const mp4DetailsPath = path.join(MP4_DIR, scenarioId, "details.json");
       const gifDetailsPath = path.join(GIF_DIR, scenarioId, "details.json");
-      
+
       if (await fs.pathExists(vodHlsDetailsPath)) {
         const details = await fs.readJson(vodHlsDetailsPath);
         scenarioType = details.type || "HLS";
@@ -642,9 +656,17 @@ class ScenarioService {
     }
 
     // Delete original scenario folder from file system (only for HLS/DASH)
-    if (scenarioType !== "VMAP" && scenarioType !== "VAST" && scenarioType !== "MP4" && scenarioType !== "GIF") {
+    if (
+      scenarioType !== "VMAP" &&
+      scenarioType !== "VAST" &&
+      scenarioType !== "MP4" &&
+      scenarioType !== "GIF"
+    ) {
       try {
-        const originalScenarioPath = path.join(baseDir, `${scenarioId}_original`);
+        const originalScenarioPath = path.join(
+          baseDir,
+          `${scenarioId}_original`,
+        );
         if (await fs.pathExists(originalScenarioPath)) {
           await fs.remove(originalScenarioPath);
           console.log(
@@ -661,7 +683,12 @@ class ScenarioService {
     }
 
     // Delete ZIP file if it exists (only for HLS/DASH)
-    if (scenarioType !== "VMAP" && scenarioType !== "VAST" && scenarioType !== "MP4" && scenarioType !== "GIF") {
+    if (
+      scenarioType !== "VMAP" &&
+      scenarioType !== "VAST" &&
+      scenarioType !== "MP4" &&
+      scenarioType !== "GIF"
+    ) {
       try {
         const zipPath = path.join(baseDir, `${scenarioId}.zip`);
         if (await fs.pathExists(zipPath)) {
@@ -694,7 +721,9 @@ class ScenarioService {
           const detailsPath = path.join(scenarioPath, "details.json");
 
           if (await fs.pathExists(detailsPath)) {
-            const existingScenario = await Scenario.findOne({ scenarioId: dir });
+            const existingScenario = await Scenario.findOne({
+              scenarioId: dir,
+            });
 
             if (!existingScenario) {
               const details = await fs.readJson(detailsPath);
@@ -721,7 +750,9 @@ class ScenarioService {
           const detailsPath = path.join(scenarioPath, "details.json");
 
           if (await fs.pathExists(detailsPath)) {
-            const existingScenario = await Scenario.findOne({ scenarioId: dir });
+            const existingScenario = await Scenario.findOne({
+              scenarioId: dir,
+            });
 
             if (!existingScenario) {
               const details = await fs.readJson(detailsPath);
@@ -748,7 +779,9 @@ class ScenarioService {
           const detailsPath = path.join(scenarioPath, "details.json");
 
           if (await fs.pathExists(detailsPath)) {
-            const existingScenario = await Scenario.findOne({ scenarioId: dir });
+            const existingScenario = await Scenario.findOne({
+              scenarioId: dir,
+            });
 
             if (!existingScenario) {
               const details = await fs.readJson(detailsPath);
@@ -775,7 +808,9 @@ class ScenarioService {
           const detailsPath = path.join(scenarioPath, "details.json");
 
           if (await fs.pathExists(detailsPath)) {
-            const existingScenario = await Scenario.findOne({ scenarioId: dir });
+            const existingScenario = await Scenario.findOne({
+              scenarioId: dir,
+            });
 
             if (!existingScenario) {
               const details = await fs.readJson(detailsPath);
@@ -802,7 +837,9 @@ class ScenarioService {
           const detailsPath = path.join(scenarioPath, "details.json");
 
           if (await fs.pathExists(detailsPath)) {
-            const existingScenario = await Scenario.findOne({ scenarioId: dir });
+            const existingScenario = await Scenario.findOne({
+              scenarioId: dir,
+            });
 
             if (!existingScenario) {
               const details = await fs.readJson(detailsPath);
@@ -829,7 +866,9 @@ class ScenarioService {
           const detailsPath = path.join(scenarioPath, "details.json");
 
           if (await fs.pathExists(detailsPath)) {
-            const existingScenario = await Scenario.findOne({ scenarioId: dir });
+            const existingScenario = await Scenario.findOne({
+              scenarioId: dir,
+            });
 
             if (!existingScenario) {
               const details = await fs.readJson(detailsPath);

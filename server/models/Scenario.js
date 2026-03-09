@@ -28,9 +28,14 @@ const scenarioSchema = new mongoose.Schema(
     description: String,
     sourceManifestUrl: {
       type: String,
-      required: function() {
+      required: function () {
         // sourceManifestUrl is not required for VMAP, VAST, MP4, and GIF types
-        return this.type !== "VMAP" && this.type !== "VAST" && this.type !== "MP4" && this.type !== "GIF";
+        return (
+          this.type !== "VMAP" &&
+          this.type !== "VAST" &&
+          this.type !== "MP4" &&
+          this.type !== "GIF"
+        );
       },
     },
     type: {
@@ -61,10 +66,6 @@ const scenarioSchema = new mongoose.Schema(
       type: String,
       enum: ["YES", "NO"],
       default: "NO",
-    },
-    cookieValue: {
-      type: String,
-      default: null,
     },
     cookieValidationEnabled: {
       type: Boolean,

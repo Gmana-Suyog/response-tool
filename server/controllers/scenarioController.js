@@ -204,7 +204,13 @@ class ScenarioController {
       }
 
       // Source manifest URL is only required for HLS, DASH, and other streaming types
-      if (type !== "VMAP" && type !== "VAST" && type !== "MP4" && type !== "GIF" && !sourceManifestUrl) {
+      if (
+        type !== "VMAP" &&
+        type !== "VAST" &&
+        type !== "MP4" &&
+        type !== "GIF" &&
+        !sourceManifestUrl
+      ) {
         console.log(
           "Validation failed: missing sourceManifestUrl for type:",
           type,
@@ -259,7 +265,13 @@ class ScenarioController {
       });
 
       // Only fetch master manifest for HLS (not for DASH, VMAP, VAST, MP4, or GIF)
-      if (type !== "DASH" && type !== "VMAP" && type !== "VAST" && type !== "MP4" && type !== "GIF") {
+      if (
+        type !== "DASH" &&
+        type !== "VMAP" &&
+        type !== "VAST" &&
+        type !== "MP4" &&
+        type !== "GIF"
+      ) {
         // Fetch and save master manifest for HLS
         console.log("Fetching master manifest for HLS...");
         try {
@@ -434,8 +446,7 @@ placeholder.m3u8`;
         newDetails.type === "HLS" &&
         newDetails.playbackType === "Live"
       ) {
-        const crypto = require("crypto");
-        newDetails.cookieValue = crypto.randomBytes(16).toString("hex");
+        newDetails.cookieValue = null;
         console.log(
           `Generated new cookie value for cloned scenario ${newScenarioId}: ${newDetails.cookieValue}`,
         );
@@ -489,7 +500,12 @@ placeholder.m3u8`;
   async startDownload(req, res) {
     try {
       const { id } = req.params;
-      const { profileNumber, maxSegmentsPerFetch, maxSegmentsToDownload, maxAudioSegmentsToDownload } = req.body;
+      const {
+        profileNumber,
+        maxSegmentsPerFetch,
+        maxSegmentsToDownload,
+        maxAudioSegmentsToDownload,
+      } = req.body;
 
       // Get scenario to check type
       const scenario = await scenarioService.getScenarioById(id);
@@ -515,23 +531,29 @@ placeholder.m3u8`;
       } else if (scenario.type === "HLS" && scenario.playbackType === "VOD") {
         // VOD HLS download - downloads from lowest bitrate profile only
         // Validate maxSegmentsToDownload if provided
-        if (maxSegmentsToDownload !== undefined && maxSegmentsToDownload !== null) {
+        if (
+          maxSegmentsToDownload !== undefined &&
+          maxSegmentsToDownload !== null
+        ) {
           if (maxSegmentsToDownload < 1) {
             return res.status(400).json({
               error: "maxSegmentsToDownload must be at least 1",
             });
           }
         }
-        
+
         // Validate maxAudioSegmentsToDownload if provided
-        if (maxAudioSegmentsToDownload !== undefined && maxAudioSegmentsToDownload !== null) {
+        if (
+          maxAudioSegmentsToDownload !== undefined &&
+          maxAudioSegmentsToDownload !== null
+        ) {
           if (maxAudioSegmentsToDownload < 1) {
             return res.status(400).json({
               error: "maxAudioSegmentsToDownload must be at least 1",
             });
           }
         }
-        
+
         result = await vodHlsDownloadService.startVodHlsDownload(id, {
           maxSegmentsToDownload: maxSegmentsToDownload || null,
           maxAudioSegmentsToDownload: maxAudioSegmentsToDownload || null,
@@ -545,7 +567,10 @@ placeholder.m3u8`;
         }
 
         // Validate maxSegmentsToDownload if provided
-        if (maxSegmentsToDownload !== undefined && maxSegmentsToDownload !== null) {
+        if (
+          maxSegmentsToDownload !== undefined &&
+          maxSegmentsToDownload !== null
+        ) {
           if (maxSegmentsToDownload < 1) {
             return res.status(400).json({
               error: "maxSegmentsToDownload must be at least 1",
@@ -566,7 +591,12 @@ placeholder.m3u8`;
       // Update scenario status in database
       await scenarioService.updateScenario(id, {
         downloadStatus: "downloading",
-        currentProfile: scenario.type === "DASH" ? 0 : (scenario.playbackType === "VOD" ? 0 : profileNumber),
+        currentProfile:
+          scenario.type === "DASH"
+            ? 0
+            : scenario.playbackType === "VOD"
+              ? 0
+              : profileNumber,
         maxSegmentsPerFetch: segmentLimit,
         maxSegmentsToDownload: maxSegmentsToDownload || null,
         maxAudioSegmentsToDownload: maxAudioSegmentsToDownload || null,
@@ -604,7 +634,10 @@ placeholder.m3u8`;
           if (scenario.type === "DASH") {
             // DASH stop
             await dashDownloadService.stopDashDownload(id);
-          } else if (scenario.type === "HLS" && scenario.playbackType === "VOD") {
+          } else if (
+            scenario.type === "HLS" &&
+            scenario.playbackType === "VOD"
+          ) {
             // VOD HLS stop
             await vodHlsDownloadService.stopVodHlsDownload(id);
           } else {
@@ -728,16 +761,16 @@ placeholder.m3u8`;
       const decodedFilePath = decodeURIComponent(filePath); // Decode URL-encoded characters
 
       // Handle OPTIONS preflight request immediately
-      if (req.method === 'OPTIONS') {
+      if (req.method === "OPTIONS") {
         // Get scenario to check cookie status for proper CORS handling
         const scenario = await scenarioService.getScenarioById(id);
         if (!scenario) {
           return res.status(404).json({ error: "Scenario not found" });
         }
-        
+
         const cookieService = require("../services/cookieService");
         const isCookieEnabled = await cookieService.isCookieEnabled(id);
-        
+
         const allowedOrigins = [
           "http://localhost:3000",
           "http://127.0.0.1:3000",
@@ -745,33 +778,48 @@ placeholder.m3u8`;
           "http://127.0.0.1:5173",
         ];
         const origin = req.headers.origin;
-        
+
         if (isCookieEnabled) {
           // Cookie-enabled: use specific origin with credentials
           if (allowedOrigins.includes(origin)) {
             res.setHeader("Access-Control-Allow-Origin", origin);
             res.setHeader("Access-Control-Allow-Credentials", "true");
-            res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Cookie");
+            res.setHeader(
+              "Access-Control-Allow-Headers",
+              "Range, Content-Type, Cookie",
+            );
           } else {
             res.setHeader("Access-Control-Allow-Origin", origin || "*");
             res.setHeader("Access-Control-Allow-Credentials", "true");
-            res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Cookie");
+            res.setHeader(
+              "Access-Control-Allow-Headers",
+              "Range, Content-Type, Cookie",
+            );
           }
         } else {
           // Non-cookie: if origin is in allowed list, use specific origin (for axios withCredentials)
           if (allowedOrigins.includes(origin)) {
             res.setHeader("Access-Control-Allow-Origin", origin);
             res.setHeader("Access-Control-Allow-Credentials", "true");
-            res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Cookie");
+            res.setHeader(
+              "Access-Control-Allow-Headers",
+              "Range, Content-Type, Cookie",
+            );
           } else {
             // Unknown origin, use wildcard
             res.setHeader("Access-Control-Allow-Origin", "*");
-            res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+            res.setHeader(
+              "Access-Control-Allow-Headers",
+              "Range, Content-Type",
+            );
           }
         }
-        
+
         res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-        res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range");
+        res.setHeader(
+          "Access-Control-Expose-Headers",
+          "Content-Length, Content-Range",
+        );
         res.setHeader("Access-Control-Max-Age", "86400");
         return res.status(204).end();
       }
@@ -788,7 +836,9 @@ placeholder.m3u8`;
       // Cookie handling for HLS Live scenarios
       const cookieService = require("../services/cookieService");
       const isCookieEnabled = await cookieService.isCookieEnabled(id);
-      const isMasterRequest = decodedFilePath === "master/master-local.m3u8" || decodedFilePath === "master/master.m3u8";
+      const isMasterRequest =
+        decodedFilePath === "master/master-local.m3u8" ||
+        decodedFilePath === "master/master.m3u8";
 
       // Set CORS headers based on cookie requirement
       const allowedOrigins = [
@@ -798,10 +848,10 @@ placeholder.m3u8`;
         "http://127.0.0.1:5173",
       ];
       const origin = req.headers.origin;
-      
+
       // Check if request has credentials (cookies)
       const hasCredentials = req.headers.cookie || req.headers.authorization;
-      
+
       if (isCookieEnabled) {
         // For cookie-enabled scenarios, use specific origins and enable credentials
         if (allowedOrigins.includes(origin)) {
@@ -813,14 +863,20 @@ placeholder.m3u8`;
           res.setHeader("Access-Control-Allow-Origin", origin || "*");
           res.setHeader("Access-Control-Allow-Credentials", "true");
         }
-        res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Cookie");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Range, Content-Type, Cookie",
+        );
       } else {
         // For non-cookie scenarios
         // If browser is sending credentials (due to axios defaults), we must use specific origin
         if (hasCredentials && allowedOrigins.includes(origin)) {
           res.setHeader("Access-Control-Allow-Origin", origin);
           res.setHeader("Access-Control-Allow-Credentials", "true");
-          res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Cookie");
+          res.setHeader(
+            "Access-Control-Allow-Headers",
+            "Range, Content-Type, Cookie",
+          );
         } else if (origin && allowedOrigins.includes(origin)) {
           // Origin is present and allowed, use specific origin for better compatibility
           res.setHeader("Access-Control-Allow-Origin", origin);
@@ -842,47 +898,64 @@ placeholder.m3u8`;
 
       // Handle master manifest request - set cookie if enabled
       if (isCookieEnabled && isMasterRequest) {
-        const expectedCookieValue = await cookieService.getExpectedCookieValue(id);
-        if (expectedCookieValue) {
-          res.setHeader(
-            "Set-Cookie",
-            `sessionId=${expectedCookieValue}; Path=/; HttpOnly; SameSite=None; Secure;`
-          );
-          cookieService.registerSession(id, expectedCookieValue);
-          console.log(`[Cookie-${id}] Set cookie on master manifest request: sessionId=${expectedCookieValue}`);
-        }
+        const sessionCookie = cookieService.generateSessionCookie(id);
+
+        res.setHeader(
+          "Set-Cookie",
+          `sessionId=${sessionCookie}; Path=/; HttpOnly; SameSite=None; Secure;`,
+        );
+
+        console.log(
+          `[Cookie-${id}] Set new session cookie on master manifest request: ${sessionCookie}`,
+        );
+        console.log(
+          `[Cookie-${id}] Total active sesssions: ${cookieService.getSessionCount(id)}`,
+        );
       }
 
       // Validate cookie for non-master requests if cookie is enabled AND validation is enabled
       if (isCookieEnabled && !isMasterRequest) {
-        const isCookieValidationEnabled = await cookieService.isCookieValidationEnabled(id);
-        
-        console.log(`[Cookie-${id}] Cookie enabled: ${isCookieEnabled}, Validation enabled: ${isCookieValidationEnabled}`);
-        
+        const isCookieValidationEnabled =
+          await cookieService.isCookieValidationEnabled(id);
+
+        console.log(
+          `[Cookie-${id}] Cookie enabled: ${isCookieEnabled}, Validation enabled: ${isCookieValidationEnabled}`,
+        );
+
         if (isCookieValidationEnabled) {
           const cookieHeader = req.headers.cookie;
           const sessionId = cookieService.parseCookie(cookieHeader);
-          const expectedCookieValue = await cookieService.getExpectedCookieValue(id);
 
           if (!sessionId) {
-            console.log(`[Cookie-${id}] Request rejected - no cookie header found`);
-            return res.status(401).json({ 
+            console.log(
+              `[Cookie-${id}] Request rejected - no cookie header found`,
+            );
+            return res.status(401).json({
               error: "Cookie required",
-              message: "Please request the master manifest first to obtain a session cookie"
+              message:
+                "Please request the master manifest first to obtain a session cookie",
             });
           }
 
-          if (sessionId !== expectedCookieValue) {
-            console.log(`[Cookie-${id}] Request rejected - invalid cookie value. Expected: ${expectedCookieValue}, Got: ${sessionId}`);
-            return res.status(401).json({ 
-              error: "Invalid cookie",
-              message: "The provided session cookie is invalid"
+          // Validate that this session exists and is valid
+          if (!cookieService.isValidSession(id, sessionId)) {
+            console.log(
+              `[Cookie-${id}] Request rejected - invalid or expired session: ${sessionId}`,
+            );
+            return res.status(401).json({
+              error: "Invalid session",
+              message:
+                "The provided session cookie is invalid or has expired. Please request the master manifest again.",
             });
           }
 
-          console.log(`[Cookie-${id}] Request validated with cookie: ${sessionId}`);
+          console.log(
+            `[Cookie-${id}] Request validated with session: ${sessionId}`,
+          );
         } else {
-          console.log(`[Cookie-${id}] Cookie validation disabled - allowing request without validation`);
+          console.log(
+            `[Cookie-${id}] Cookie validation disabled - allowing request without validation`,
+          );
         }
       }
 
@@ -911,12 +984,12 @@ placeholder.m3u8`;
 
             res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
             res.setHeader("Cache-Control", "no-cache");
-            
+
             // Maintain CORS headers set earlier
             if (!res.getHeader("Access-Control-Allow-Origin")) {
               res.setHeader("Access-Control-Allow-Origin", "*");
             }
-            
+
             res.status(status).send(content);
             return;
           } catch (error) {
@@ -938,15 +1011,18 @@ placeholder.m3u8`;
             const status = result.status !== undefined ? result.status : 200;
 
             res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            res.setHeader(
+              "Cache-Control",
+              "no-cache, no-store, must-revalidate",
+            );
             res.setHeader("Pragma", "no-cache");
             res.setHeader("Expires", "0");
-            
+
             // Maintain CORS headers set earlier
             if (!res.getHeader("Access-Control-Allow-Origin")) {
               res.setHeader("Access-Control-Allow-Origin", "*");
             }
-            
+
             res.status(status).send(content);
             return;
           } catch (error) {
@@ -981,17 +1057,19 @@ placeholder.m3u8`;
 
             res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
             res.setHeader("Cache-Control", "no-cache");
-            
+
             // Maintain CORS headers set earlier
             if (!res.getHeader("Access-Control-Allow-Origin")) {
               res.setHeader("Access-Control-Allow-Origin", "*");
             }
-            
+
             res.status(status).send(content);
             return;
           } catch (error) {
             console.error("Error serving VOD audio playlist:", error);
-            return res.status(404).json({ error: "VOD audio playlist not found" });
+            return res
+              .status(404)
+              .json({ error: "VOD audio playlist not found" });
           }
         } else {
           // Live streaming audio content
@@ -1008,15 +1086,18 @@ placeholder.m3u8`;
             const status = result.status !== undefined ? result.status : 200;
 
             res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            res.setHeader(
+              "Cache-Control",
+              "no-cache, no-store, must-revalidate",
+            );
             res.setHeader("Pragma", "no-cache");
             res.setHeader("Expires", "0");
-            
+
             // Maintain CORS headers set earlier
             if (!res.getHeader("Access-Control-Allow-Origin")) {
               res.setHeader("Access-Control-Allow-Origin", "*");
             }
-            
+
             res.status(status).send(content);
             return;
           } catch (error) {
@@ -1043,12 +1124,12 @@ placeholder.m3u8`;
 
           res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
           res.setHeader("Cache-Control", "no-cache");
-          
+
           // Maintain CORS headers set earlier
           if (!res.getHeader("Access-Control-Allow-Origin")) {
             res.setHeader("Access-Control-Allow-Origin", "*");
           }
-          
+
           res.send(manifestContent);
           return;
         } catch (error) {
@@ -1109,12 +1190,12 @@ placeholder.m3u8`;
             );
             res.setHeader("Pragma", "no-cache");
             res.setHeader("Expires", "0");
-            
+
             // Maintain CORS headers set earlier
             if (!res.getHeader("Access-Control-Allow-Origin")) {
               res.setHeader("Access-Control-Allow-Origin", "*");
             }
-            
+
             res.send(manifestContent);
           }, delay);
           return;
@@ -1131,8 +1212,10 @@ placeholder.m3u8`;
       // For VOD scenarios, serve segments directly without dynamic renaming
       if (scenario.playbackType === "VOD" && requestedFile.endsWith(".ts")) {
         const segmentName = path.basename(requestedFile);
-        const mediaType = decodedFilePath.includes("/audio/") ? "audio" : "video";
-        
+        const mediaType = decodedFilePath.includes("/audio/")
+          ? "audio"
+          : "video";
+
         // Serve segment directly from media directory
         const mediaDir = path.join(scenarioPath, "media", mediaType);
         const segmentPath = path.join(mediaDir, segmentName);
@@ -1150,10 +1233,7 @@ placeholder.m3u8`;
       }
 
       // Force 200 status by removing conditional headers from request for segments, playlists, and master manifest
-      if (
-        requestedFile.endsWith(".ts") ||
-        requestedFile.endsWith(".m3u8")
-      ) {
+      if (requestedFile.endsWith(".ts") || requestedFile.endsWith(".m3u8")) {
         delete req.headers["if-none-match"];
         delete req.headers["if-modified-since"];
       }
@@ -1170,7 +1250,7 @@ placeholder.m3u8`;
       if (!res.getHeader("Access-Control-Allow-Origin")) {
         res.setHeader("Access-Control-Allow-Origin", "*");
       }
-      
+
       res.sendFile(requestedFile);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -1303,7 +1383,7 @@ placeholder.m3u8`;
       } else {
         baseDir = HLS_DIR;
       }
-      
+
       const manifestMapPath = path.join(baseDir, id, "manifestMap.json");
 
       if (!(await fs.pathExists(manifestMapPath))) {
@@ -1597,7 +1677,11 @@ placeholder.m3u8`;
       }
 
       // Handle VMAP/VAST/MP4 scenarios differently
-      if (scenario.type === "VMAP" || scenario.type === "VAST" || scenario.type === "MP4") {
+      if (
+        scenario.type === "VMAP" ||
+        scenario.type === "VAST" ||
+        scenario.type === "MP4"
+      ) {
         let baseDir;
         if (scenario.type === "VMAP") {
           baseDir = path.join(__dirname, "../vmap");
@@ -1606,7 +1690,7 @@ placeholder.m3u8`;
         } else if (scenario.type === "MP4") {
           baseDir = path.join(__dirname, "../mp4");
         }
-        
+
         const urlMappingPath = path.join(baseDir, id, "urlMapping.json");
 
         if (!(await fs.pathExists(urlMappingPath))) {
@@ -1629,14 +1713,17 @@ placeholder.m3u8`;
           urlMapping[manifestKey].isEdited = true;
 
           await fs.writeJson(urlMappingPath, urlMapping, { spaces: 2 });
-          
-          console.log(`[${scenario.type}-${id}] Updated configuration for ${manifestKey}:`, {
-            delay: urlMapping[manifestKey].delay,
-            delayPercentage: urlMapping[manifestKey].delayPercentage,
-            statusCode: urlMapping[manifestKey].statusCode,
-            statusPercentage: urlMapping[manifestKey].statusPercentage,
-          });
-          
+
+          console.log(
+            `[${scenario.type}-${id}] Updated configuration for ${manifestKey}:`,
+            {
+              delay: urlMapping[manifestKey].delay,
+              delayPercentage: urlMapping[manifestKey].delayPercentage,
+              statusCode: urlMapping[manifestKey].statusCode,
+              statusPercentage: urlMapping[manifestKey].statusPercentage,
+            },
+          );
+
           return res.json({
             message: "Config updated",
             config: urlMapping[manifestKey],
@@ -1655,7 +1742,7 @@ placeholder.m3u8`;
       } else {
         baseDir = HLS_DIR;
       }
-      
+
       const manifestMapPath = path.join(baseDir, id, "manifestMap.json");
 
       if (!(await fs.pathExists(manifestMapPath))) {
@@ -1858,7 +1945,11 @@ placeholder.m3u8`;
       }
 
       // Handle VMAP/VAST/MP4 scenarios differently
-      if (scenario.type === "VMAP" || scenario.type === "VAST" || scenario.type === "MP4") {
+      if (
+        scenario.type === "VMAP" ||
+        scenario.type === "VAST" ||
+        scenario.type === "MP4"
+      ) {
         let baseDir;
         if (scenario.type === "VMAP") {
           baseDir = path.join(__dirname, "../vmap");
@@ -1867,7 +1958,7 @@ placeholder.m3u8`;
         } else if (scenario.type === "MP4") {
           baseDir = path.join(__dirname, "../mp4");
         }
-        
+
         const urlMappingPath = path.join(baseDir, id, "urlMapping.json");
 
         if (!(await fs.pathExists(urlMappingPath))) {
@@ -1884,9 +1975,11 @@ placeholder.m3u8`;
           urlMapping[manifestKey].isEdited = false;
 
           await fs.writeJson(urlMappingPath, urlMapping, { spaces: 2 });
-          
-          console.log(`[${scenario.type}-${id}] Reset configuration for ${manifestKey}`);
-          
+
+          console.log(
+            `[${scenario.type}-${id}] Reset configuration for ${manifestKey}`,
+          );
+
           return res.json({ message: "Config reset" });
         }
 
@@ -1902,7 +1995,7 @@ placeholder.m3u8`;
       } else {
         baseDir = HLS_DIR;
       }
-      
+
       const manifestMapPath = path.join(baseDir, id, "manifestMap.json");
 
       if (!(await fs.pathExists(manifestMapPath))) {
@@ -2023,7 +2116,11 @@ placeholder.m3u8`;
       }
 
       // Handle VMAP/VAST/MP4 scenarios differently
-      if (scenario.type === "VMAP" || scenario.type === "VAST" || scenario.type === "MP4") {
+      if (
+        scenario.type === "VMAP" ||
+        scenario.type === "VAST" ||
+        scenario.type === "MP4"
+      ) {
         let baseDir;
         if (scenario.type === "VMAP") {
           baseDir = path.join(__dirname, "../vmap");
@@ -2032,7 +2129,7 @@ placeholder.m3u8`;
         } else if (scenario.type === "MP4") {
           baseDir = path.join(__dirname, "../mp4");
         }
-        
+
         const urlMappingPath = path.join(baseDir, id, "urlMapping.json");
 
         if (!(await fs.pathExists(urlMappingPath))) {
@@ -2061,9 +2158,9 @@ placeholder.m3u8`;
         }
 
         await fs.writeJson(urlMappingPath, urlMapping, { spaces: 2 });
-        
+
         console.log(`[${scenario.type}-${id}] Reset all configurations`);
-        
+
         return res.json({ message: "All configs reset" });
       }
 
@@ -2076,7 +2173,7 @@ placeholder.m3u8`;
       } else {
         baseDir = HLS_DIR;
       }
-      
+
       const manifestMapPath = path.join(baseDir, id, "manifestMap.json");
 
       if (!(await fs.pathExists(manifestMapPath))) {
@@ -2550,7 +2647,7 @@ placeholder.m3u8`;
       } else {
         baseDir = HLS_DIR;
       }
-      
+
       const scenarioPath = path.join(baseDir, id);
       const manifestMapPath = path.join(scenarioPath, "manifestMap.json");
       const manifestMap = await fs.readJson(manifestMapPath);
@@ -2621,7 +2718,10 @@ placeholder.m3u8`;
 
             if (matchingKey) {
               const m = profileManifests[matchingKey];
-              await resetAction(`${videoSubDir}/${p}/${m.rewrittenFilename}`, p);
+              await resetAction(
+                `${videoSubDir}/${p}/${m.rewrittenFilename}`,
+                p,
+              );
               m.isContentEdited = false;
               m.isContentEditedForAll = false;
             }
@@ -2842,7 +2942,9 @@ placeholder.m3u8`;
       const { profileNumber } = req.query;
       const dashLiveStreamService = require("../services/dashLiveStreamService");
 
-      console.log(`[DASH-LIVE-MANIFEST] Request for scenario: ${id}, profileNumber: ${profileNumber}`);
+      console.log(
+        `[DASH-LIVE-MANIFEST] Request for scenario: ${id}, profileNumber: ${profileNumber}`,
+      );
 
       const result = await dashLiveStreamService.getLiveManifest(
         id,
@@ -2852,7 +2954,9 @@ placeholder.m3u8`;
       // Log a snippet of the manifest to verify BaseURL
       const baseUrlMatch = result.content.match(/<BaseURL>([^<]+)<\/BaseURL>/);
       if (baseUrlMatch) {
-        console.log(`[DASH-LIVE-MANIFEST] BaseURL in manifest: ${baseUrlMatch[1]}`);
+        console.log(
+          `[DASH-LIVE-MANIFEST] BaseURL in manifest: ${baseUrlMatch[1]}`,
+        );
       }
 
       res.status(result.statusCode);
@@ -2871,7 +2975,9 @@ placeholder.m3u8`;
       const { id } = req.params;
       const mediaPath = req.params[0];
 
-      console.log(`[DASH-LIVE-MEDIA] Request for scenario: ${id}, mediaPath: ${mediaPath}`);
+      console.log(
+        `[DASH-LIVE-MEDIA] Request for scenario: ${id}, mediaPath: ${mediaPath}`,
+      );
 
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -2886,7 +2992,9 @@ placeholder.m3u8`;
       const requestedFile = path.join(scenarioPath, "media", mediaPath);
 
       console.log(`[DASH-LIVE-MEDIA] Full file path: ${requestedFile}`);
-      console.log(`[DASH-LIVE-MEDIA] File exists: ${await fs.pathExists(requestedFile)}`);
+      console.log(
+        `[DASH-LIVE-MEDIA] File exists: ${await fs.pathExists(requestedFile)}`,
+      );
 
       if (!(await fs.pathExists(requestedFile))) {
         console.error(`[DASH-LIVE-MEDIA] File not found: ${requestedFile}`);
@@ -3141,10 +3249,15 @@ placeholder.m3u8`;
         return res.status(404).json({ error: "Scenario not found" });
       }
 
-      if (scenario.type !== "VMAP" && scenario.type !== "VAST" && scenario.type !== "MP4" && scenario.type !== "GIF") {
-        return res
-          .status(400)
-          .json({ error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios" });
+      if (
+        scenario.type !== "VMAP" &&
+        scenario.type !== "VAST" &&
+        scenario.type !== "MP4" &&
+        scenario.type !== "GIF"
+      ) {
+        return res.status(400).json({
+          error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios",
+        });
       }
 
       const otherUrlDownloadService = require("../services/otherUrlDownloadService");
@@ -3175,10 +3288,15 @@ placeholder.m3u8`;
         return res.status(404).json({ error: "Scenario not found" });
       }
 
-      if (scenario.type !== "VMAP" && scenario.type !== "VAST" && scenario.type !== "MP4" && scenario.type !== "GIF") {
-        return res
-          .status(400)
-          .json({ error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios" });
+      if (
+        scenario.type !== "VMAP" &&
+        scenario.type !== "VAST" &&
+        scenario.type !== "MP4" &&
+        scenario.type !== "GIF"
+      ) {
+        return res.status(400).json({
+          error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios",
+        });
       }
 
       const otherUrlDownloadService = require("../services/otherUrlDownloadService");
@@ -3241,9 +3359,11 @@ placeholder.m3u8`;
       // Check if index parameter is provided
       if (indexParam) {
         const index = parseInt(indexParam);
-        
+
         if (isNaN(index) || index < 1) {
-          return res.status(400).json({ error: "Invalid index parameter. Must be a positive integer." });
+          return res.status(400).json({
+            error: "Invalid index parameter. Must be a positive integer.",
+          });
         }
 
         // Find the specific configuration by index
@@ -3257,7 +3377,7 @@ placeholder.m3u8`;
         Object.entries(urlMapping).forEach(([key, entry]) => {
           if (entry.filename && !entry.error) {
             // Check if this is the base entry (url_1, url_2, etc.)
-            if (key.match(/^url_\d+$/) && !key.includes('_copy_')) {
+            if (key.match(/^url_\d+$/) && !key.includes("_copy_")) {
               allConfigs.push({ key, entry, configIndex: 1 });
             }
             // Check if this is a copy entry (url_1_copy_1, url_1_copy_2, etc.)
@@ -3270,10 +3390,12 @@ placeholder.m3u8`;
         });
 
         // Find the configuration with the matching index
-        const matchingConfig = allConfigs.find(c => c.configIndex === index);
-        
+        const matchingConfig = allConfigs.find((c) => c.configIndex === index);
+
         if (!matchingConfig) {
-          return res.status(404).json({ error: `No configuration found with index ${index}` });
+          return res
+            .status(404)
+            .json({ error: `No configuration found with index ${index}` });
         }
 
         selectedKey = matchingConfig.key;
@@ -3337,7 +3459,7 @@ placeholder.m3u8`;
       } else {
         // Scenario-based request - randomly select from all configurations
         const allConfigs = Object.entries(urlMapping).filter(
-          ([key, entry]) => entry.filename && !entry.error
+          ([key, entry]) => entry.filename && !entry.error,
         );
 
         if (allConfigs.length === 0) {
@@ -3416,9 +3538,11 @@ placeholder.m3u8`;
       // Check if index parameter is provided
       if (indexParam) {
         const index = parseInt(indexParam);
-        
+
         if (isNaN(index) || index < 1) {
-          return res.status(400).json({ error: "Invalid index parameter. Must be a positive integer." });
+          return res.status(400).json({
+            error: "Invalid index parameter. Must be a positive integer.",
+          });
         }
 
         // Find the entry with the specified index by searching through all entries
@@ -3434,7 +3558,9 @@ placeholder.m3u8`;
         }
 
         if (!selectedEntry) {
-          return res.status(404).json({ error: `No file found with index ${index}` });
+          return res
+            .status(404)
+            .json({ error: `No file found with index ${index}` });
         }
 
         const fullPath = path.join(scenarioDir, selectedEntry.filename);
@@ -3509,9 +3635,7 @@ placeholder.m3u8`;
         if (downloadedEntries.length === 1) {
           // Only one file - serve it directly
           [selectedKey, selectedEntry] = downloadedEntries[0];
-          console.log(
-            `[MP4] Serving single file: ${selectedEntry.filename}`,
-          );
+          console.log(`[MP4] Serving single file: ${selectedEntry.filename}`);
         } else {
           // Multiple files - serve randomly
           const randomIndex = Math.floor(
@@ -3631,33 +3755,33 @@ placeholder.m3u8`;
         const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const chunksize = (end - start) + 1;
+        const chunksize = end - start + 1;
         const file = fs.createReadStream(fullPath, { start, end });
         const head = {
-          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-          'Accept-Ranges': 'bytes',
-          'Content-Length': chunksize,
-          'Content-Type': 'video/mp4',
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunksize,
+          "Content-Type": "video/mp4",
         };
-        
+
         if (filename) {
-          head['X-Served-File'] = filename;
+          head["X-Served-File"] = filename;
         }
-        
+
         res.writeHead(206, head);
         file.pipe(res);
       } else {
         // Serve the entire file
         const head = {
-          'Content-Length': fileSize,
-          'Content-Type': 'video/mp4',
-          'Accept-Ranges': 'bytes',
+          "Content-Length": fileSize,
+          "Content-Type": "video/mp4",
+          "Accept-Ranges": "bytes",
         };
-        
+
         if (filename) {
-          head['X-Served-File'] = filename;
+          head["X-Served-File"] = filename;
         }
-        
+
         res.writeHead(200, head);
         fs.createReadStream(fullPath).pipe(res);
       }
@@ -3837,7 +3961,8 @@ placeholder.m3u8`;
   async updateMp4Config(req, res) {
     try {
       const { id } = req.params;
-      const { urlKey, delay, delayPercentage, statusCode, statusPercentage } = req.body;
+      const { urlKey, delay, delayPercentage, statusCode, statusPercentage } =
+        req.body;
 
       const scenario = await scenarioService.getScenarioById(id);
       if (!scenario) {
@@ -3871,12 +3996,12 @@ placeholder.m3u8`;
       urlMapping[urlKey].statusPercentage = statusPercentage || 100;
 
       // Set isEdited flag based on whether values differ from defaults
-      const isDefault = 
+      const isDefault =
         urlMapping[urlKey].delay === 0 &&
         urlMapping[urlKey].delayPercentage === 100 &&
         urlMapping[urlKey].statusCode === 200 &&
         urlMapping[urlKey].statusPercentage === 100;
-      
+
       urlMapping[urlKey].isEdited = !isDefault;
 
       await fs.writeJson(mappingPath, urlMapping, { spaces: 2 });
@@ -4187,9 +4312,11 @@ placeholder.m3u8`;
       // Check if index parameter is provided
       if (indexParam) {
         const index = parseInt(indexParam);
-        
+
         if (isNaN(index) || index < 1) {
-          return res.status(400).json({ error: "Invalid index parameter. Must be a positive integer." });
+          return res.status(400).json({
+            error: "Invalid index parameter. Must be a positive integer.",
+          });
         }
 
         // Find the entry with the specified index
@@ -4197,12 +4324,14 @@ placeholder.m3u8`;
         const selectedEntry = urlMapping[entryKey];
 
         if (!selectedEntry) {
-          return res.status(404).json({ error: `No file found with index ${index}` });
+          return res
+            .status(404)
+            .json({ error: `No file found with index ${index}` });
         }
 
         if (!selectedEntry.filename || selectedEntry.error) {
-          return res.status(404).json({ 
-            error: `File with index ${index} failed to download: ${selectedEntry.error || 'Unknown error'}` 
+          return res.status(404).json({
+            error: `File with index ${index} failed to download: ${selectedEntry.error || "Unknown error"}`,
           });
         }
 
@@ -4411,12 +4540,12 @@ placeholder.m3u8`;
       urlMapping[urlKey].statusPercentage = statusPercentage || 100;
 
       // Set isEdited flag based on whether values differ from defaults
-      const isDefault = 
+      const isDefault =
         urlMapping[urlKey].delay === 0 &&
         urlMapping[urlKey].delayPercentage === 100 &&
         urlMapping[urlKey].statusCode === 200 &&
         urlMapping[urlKey].statusPercentage === 100;
-      
+
       urlMapping[urlKey].isEdited = !isDefault;
 
       await fs.writeJson(mappingPath, urlMapping, { spaces: 2 });
@@ -4450,8 +4579,8 @@ placeholder.m3u8`;
       }
 
       if (!["VMAP", "VAST", "MP4", "GIF"].includes(scenario.type)) {
-        return res.status(400).json({ 
-          error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios" 
+        return res.status(400).json({
+          error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios",
         });
       }
 
@@ -4479,19 +4608,22 @@ placeholder.m3u8`;
       }
 
       const sourceConfig = urlMapping[configKey];
-      
+
       // Calculate the maximum copy number for this base key
       const allKeys = Object.keys(urlMapping);
-      const baseKey = configKey.split('_copy_')[0];
-      
-      const maxCopyIndex = Math.max(...allKeys.map(key => {
-        if (key === baseKey) return 0; // Base entry has no copy number
-        const match = key.match(/^url_(\d+)_copy_(\d+)$/);
-        if (match && key.startsWith(baseKey + '_copy_')) {
-          return parseInt(match[2]);
-        }
-        return 0;
-      }), 0);
+      const baseKey = configKey.split("_copy_")[0];
+
+      const maxCopyIndex = Math.max(
+        ...allKeys.map((key) => {
+          if (key === baseKey) return 0; // Base entry has no copy number
+          const match = key.match(/^url_(\d+)_copy_(\d+)$/);
+          if (match && key.startsWith(baseKey + "_copy_")) {
+            return parseInt(match[2]);
+          }
+          return 0;
+        }),
+        0,
+      );
 
       const newCopyIndex = maxCopyIndex + 1;
       const newKey = `${baseKey}_copy_${newCopyIndex}`;
@@ -4500,7 +4632,7 @@ placeholder.m3u8`;
       // Count all configurations (base + copies) to determine the next index
       const allConfigIndices = [];
       Object.entries(urlMapping).forEach(([key, entry]) => {
-        if (key.match(/^url_\d+$/) && !key.includes('_copy_')) {
+        if (key.match(/^url_\d+$/) && !key.includes("_copy_")) {
           allConfigIndices.push(1); // Base entry is always index 1
         }
         const copyMatch = key.match(/^url_\d+_copy_(\d+)$/);
@@ -4508,8 +4640,9 @@ placeholder.m3u8`;
           allConfigIndices.push(parseInt(copyMatch[1]) + 1); // copy_1 = index 2, copy_2 = index 3, etc.
         }
       });
-      
-      const maxConfigIndex = allConfigIndices.length > 0 ? Math.max(...allConfigIndices) : 0;
+
+      const maxConfigIndex =
+        allConfigIndices.length > 0 ? Math.max(...allConfigIndices) : 0;
       const newConfigIndex = maxConfigIndex + 1;
 
       urlMapping[newKey] = {
@@ -4525,13 +4658,15 @@ placeholder.m3u8`;
 
       await fs.writeJson(mappingPath, urlMapping, { spaces: 2 });
 
-      console.log(`[${scenario.type}-${id}] Created copy configuration: ${newKey}`);
+      console.log(
+        `[${scenario.type}-${id}] Created copy configuration: ${newKey}`,
+      );
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         newKey,
         config: urlMapping[newKey],
-        urlMapping 
+        urlMapping,
       });
     } catch (error) {
       console.error("Error copying config entry:", error);
@@ -4554,14 +4689,15 @@ placeholder.m3u8`;
       }
 
       if (!["VMAP", "VAST", "MP4", "GIF"].includes(scenario.type)) {
-        return res.status(400).json({ 
-          error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios" 
+        return res.status(400).json({
+          error: "This endpoint is only for VMAP/VAST/MP4/GIF scenarios",
         });
       }
 
-      if (!configKey.includes('_copy_')) {
-        return res.status(400).json({ 
-          error: "Cannot remove original configuration. Only copies can be removed." 
+      if (!configKey.includes("_copy_")) {
+        return res.status(400).json({
+          error:
+            "Cannot remove original configuration. Only copies can be removed.",
         });
       }
 
@@ -4592,12 +4728,14 @@ placeholder.m3u8`;
 
       await fs.writeJson(mappingPath, urlMapping, { spaces: 2 });
 
-      console.log(`[${scenario.type}-${id}] Removed configuration: ${configKey}`);
+      console.log(
+        `[${scenario.type}-${id}] Removed configuration: ${configKey}`,
+      );
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         removedKey: configKey,
-        urlMapping 
+        urlMapping,
       });
     } catch (error) {
       console.error("Error removing config entry:", error);
@@ -4610,10 +4748,14 @@ placeholder.m3u8`;
       const { id } = req.params;
       const { enabled } = req.body;
 
-      console.log(`[Cookie-${id}] Toggle cookie validation called with enabled: ${enabled}`);
+      console.log(
+        `[Cookie-${id}] Toggle cookie validation called with enabled: ${enabled}`,
+      );
 
-      if (typeof enabled !== 'boolean') {
-        return res.status(400).json({ error: "enabled must be a boolean value" });
+      if (typeof enabled !== "boolean") {
+        return res
+          .status(400)
+          .json({ error: "enabled must be a boolean value" });
       }
 
       const scenario = await scenarioService.getScenarioById(id);
@@ -4621,12 +4763,19 @@ placeholder.m3u8`;
         return res.status(404).json({ error: "Scenario not found" });
       }
 
-      console.log(`[Cookie-${id}] Current scenario cookieValidationEnabled: ${scenario.cookieValidationEnabled}`);
+      console.log(
+        `[Cookie-${id}] Current scenario cookieValidationEnabled: ${scenario.cookieValidationEnabled}`,
+      );
 
       // Only allow toggling for HLS Live scenarios with cookies enabled
-      if (scenario.type !== "HLS" || scenario.playbackType !== "Live" || scenario.addCookie !== "YES") {
-        return res.status(400).json({ 
-          error: "Cookie validation can only be toggled for HLS Live scenarios with cookies enabled" 
+      if (
+        scenario.type !== "HLS" ||
+        scenario.playbackType !== "Live" ||
+        scenario.addCookie !== "YES"
+      ) {
+        return res.status(400).json({
+          error:
+            "Cookie validation can only be toggled for HLS Live scenarios with cookies enabled",
         });
       }
 
@@ -4634,15 +4783,19 @@ placeholder.m3u8`;
         cookieValidationEnabled: enabled,
       });
 
-      console.log(`[Cookie-${id}] Cookie validation ${enabled ? 'enabled' : 'disabled'} - updated in database`);
+      console.log(
+        `[Cookie-${id}] Cookie validation ${enabled ? "enabled" : "disabled"} - updated in database`,
+      );
 
       // Verify the update
       const updatedScenario = await scenarioService.getScenarioById(id);
-      console.log(`[Cookie-${id}] Verified cookieValidationEnabled after update: ${updatedScenario.cookieValidationEnabled}`);
+      console.log(
+        `[Cookie-${id}] Verified cookieValidationEnabled after update: ${updatedScenario.cookieValidationEnabled}`,
+      );
 
-      res.json({ 
-        message: `Cookie validation ${enabled ? 'enabled' : 'disabled'} successfully`,
-        cookieValidationEnabled: enabled 
+      res.json({
+        message: `Cookie validation ${enabled ? "enabled" : "disabled"} successfully`,
+        cookieValidationEnabled: enabled,
       });
     } catch (error) {
       console.error("Error toggling cookie validation:", error);
