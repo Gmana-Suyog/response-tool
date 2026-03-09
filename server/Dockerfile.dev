@@ -1,0 +1,23 @@
+# Server Development Dockerfile with hot reload
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm install
+
+# Create necessary directories
+RUN mkdir -p hls dash vmap vast mp4 gif vod/hls
+
+# Expose port
+EXPOSE 3001
+
+# Set environment to development
+ENV NODE_ENV=development
+
+# Start the server with nodemon for hot reload
+CMD ["npm", "run", "dev"]

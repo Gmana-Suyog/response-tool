@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: hls-qa-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=hls-qa-tool
+    networks:
+      - hls-qa-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hls-qa-server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/hls-qa-tool
+      - SERVER_BASE_URL=http://localhost:3001
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_change_in_production}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET:-your_refresh_token_secret_change_in_production}
+      - JWT_ACCESS_TOKEN_EXPIRY=1h
+      - JWT_REFRESH_TOKEN_EXPIRY=7d
+      - HLS_DIR=/app/hls
+      - DASH_DIR=/app/dash
+      - MAX_SCENARIO_SIZE_MB=1000
+      - DOWNLOAD_TIMEOUT_MS=30000
+      - MAX_CONCURRENT_DOWNLOADS=5
+      - SEGMENT_RETRY_ATTEMPTS=3
+      - DEFAULT_SEGMENT_COUNT=6
+      - MAX_PROFILE_COUNT=10
+    volumes:
+      - server_hls:/app/hls
+      - server_dash:/app/dash
+      - server_vmap:/app/vmap
+      - server_vast:/app/vast
+      - server_mp4:/app/mp4
+      - server_gif:/app/gif
+      - server_vod:/app/vod
+    depends_on:
+      - mongodb
+    networks:
+      - hls-qa-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: hls-qa-client
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3001
+    depends_on:
+      - server
+    networks:
+      - hls-qa-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  server_hls:
+    driver: local
+  server_dash:
+    driver: local
+  server_vmap:
+    driver: local
+  server_vast:
+    driver: local
+  server_mp4:
+    driver: local
+  server_gif:
+    driver: local
+  server_vod:
+    driver: local
+
+networks:
+  hls-qa-network:
+    driver: bridge

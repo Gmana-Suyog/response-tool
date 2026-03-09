@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Data directories (will be mounted as volumes)
+hls/*
+dash/*
+vmap/*
+vast/*
+mp4/*
+gif/*
+vod/*
+logs/*
+
+# Keep directory structure
+!hls/.gitkeep
+!dash/.gitkeep
+!vmap/.gitkeep
+!vast/.gitkeep
+!mp4/.gitkeep
+!gif/.gitkeep
+!vod/.gitkeep
+!logs/.gitkeep
+
+# Test files
+test
+*.test.js
+*.spec.js
+
+# Documentation
+*.md
+docs
