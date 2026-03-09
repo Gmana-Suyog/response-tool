@@ -1,5 +1,5 @@
 {
-  "name": "hls-qa-tool-client",
+  "name": "response-tool-frontend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

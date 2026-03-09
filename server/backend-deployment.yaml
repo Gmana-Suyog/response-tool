@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: response-tool-backend
+  labels:
+    app: response-tool-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: response-tool-backend
+  template:
+    metadata:
+      labels:
+        app: response-tool-backend
+    spec:
+      containers:
+        - name: backend
+          image: response-tool-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3001
+          env:
+            - name: PORT
+              value: "3001"
+            - name: NODE_ENV
+              value: "production"
+            - name: SERVER_BASE_URL
+              value: "http://backend-service:3001"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb:27017/hls-qa-tool"
+            - name: JWT_SECRET
+              value: "your_jwt_secret_key_here"
+            - name: REFRESH_TOKEN_SECRET
+              value: "your_refresh_token_secret_key_here"
+            - name: JWT_ACCESS_TOKEN_EXPIRY
+              value: "1h"
+            - name: JWT_REFRESH_TOKEN_EXPIRY
+              value: "7d"
+            - name: HLS_DIR
+              value: "./hls"
+            - name: MAX_SCENARIO_SIZE_MB
+              value: "1000"
+            - name: DOWNLOAD_TIMEOUT_MS
+              value: "30000"
+            - name: MAX_CONCURRENT_DOWNLOADS
+              value: "5"
+            - name: SEGMENT_RETRY_ATTEMPTS
+              value: "3"
+            - name: DEFAULT_SEGMENT_COUNT
+              value: "6"
+            - name: MAX_PROFILE_COUNT
+              value: "10"

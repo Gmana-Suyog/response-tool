@@ -1,7 +1,7 @@
 {
-  "name": "hls-qa-tool-server",
+  "name": "response-tool-server",
   "version": "1.0.0",
-  "description": "Backend server for HLS QA Tool",
+  "description": "Backend server for Response Tool",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

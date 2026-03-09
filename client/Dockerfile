@@ -1,5 +1,5 @@
-# Client Dockerfile - Multi-stage build
-FROM node:18-alpine AS builder
+# Client Dockerfile
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
@@ -16,17 +16,8 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production stage - Use nginx to serve static files
-FROM nginx:alpine
+# Expose port (Vite preview or dev server)
+EXPOSE 5173
 
-# Copy built files from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start the app
+CMD ["npm", "run", "preview"]
